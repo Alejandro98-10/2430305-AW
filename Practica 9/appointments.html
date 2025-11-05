@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Agenda</title></head>
+<body>
+  <h1>Agenda</h1>
+  <button id="new">Nueva cita</button>
+  <table id="tbl"><thead><tr><th>Inicio</th><th>Paciente</th><th>Médico</th><th>Servicio</th><th>Estado</th></tr></thead><tbody></tbody></table>
+
+  <div id="form" style="display:none">
+    <h3>Nueva cita</h3>
+    <form id="f">
+      <label>Paciente ID <input id="patient_id"></label>
+      <label>Médico <select id="doctor_id"></select></label>
+      <label>Servicio <select id="service_id"></select></label>
+      <label>Inicio <input type="datetime-local" id="start"></label>
+      <label>Fin <input type="datetime-local" id="end"></label>
+      <button type="submit">Guardar</button>
+    </form>
+  </div>
+
+  <script>
+    async function api(path, method='GET', body){ 
+      const token = sessionStorage.getItem('token');
+      const opts = {method, headers: {Authorization: 'Bearer ' + token}};
+      if (body){ opts.body = JSON.stringify(body); opts.headers['Content-Type']='application/json' }
+      const r = await fetch('/api' + path, opts); return r.json();
+    }
+
+    async function load(){
+      const appts = await api('/appointments');
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = '';
+      appts.forEach(a=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${a.scheduled_start}</td><td>${a.patient_name}</td><td>${a.doctor_name}</td><td>${a.service_name}</td><td>${a.status_name}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadSelects(){
+      const docs = await api('/doctors');
+      const selDoc = document.getElementById('doctor_id');
+      docs.forEach(d => selDoc.innerHTML += `<option value="${d.doctor_id}">${d.first_name} ${d.last_name}</option>`);
+      const services = await api('/services');
+      const selS = document.getElementById('service_id');
+      services.forEach(s => selS.innerHTML += `<option value="${s.service_id}">${s.name}</option>`);
+    }
+
+    document.getElementById('new').addEventListener('click', ()=> document.getElementById('form').style.display='block');
+    document.getElementById('f').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const payload = {
+        patient_id: document.getElementById('patient_id').value,
+        doctor_id: document.getElementById('doctor_id').value,
+        service_id: document.getElementById('service_id').value,
+        scheduled_start: document.getElementById('start').value,
+        scheduled_end: document.getElementById('end').value
+      };
+      await api('/appointments','POST',payload);
+      document.getElementById('form').style.display='none';
+      load();
+    });
+
+    loadSelects();
+    load();
+  </script>
+</body>
+</html>

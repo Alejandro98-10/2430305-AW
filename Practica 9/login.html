@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Login - Clinica</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Iniciar sesión</h1>
+    <form id="loginForm">
+      <label>Usuario
+        <input type="text" id="username" required />
+      </label>
+      <label>Contraseña
+        <input type="password" id="password" required />
+      </label>
+      <button type="submit">Entrar</button>
+    </form>
+    <div id="msg"></div>
+  </main>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        const data = await res.json();
+        if (res.ok) {
+          // guardar token en sessionStorage y redirigir
+          sessionStorage.setItem('token', data.token);
+          window.location = 'dashboard.html';
+        } else {
+          document.getElementById('msg').innerText = data.message || 'Error en credenciales';
+        }
+      } catch (err) {
+        document.getElementById('msg').innerText = 'Error de conexión';
+      }
+    });
+  </script>
+</body>
+</html>

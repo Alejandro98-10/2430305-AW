@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Pacientes</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <h1>Pacientes</h1>
+  <input id="q" placeholder="Buscar por nombre o CURP" />
+  <button id="search">Buscar</button>
+  <button id="new">Nuevo paciente</button>
+
+  <table id="tbl">
+    <thead><tr><th>ID</th><th>Nombre</th><th>Edad</th><th>Acciones</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="formArea" style="display:none">
+    <h3 id="formTitle">Nuevo paciente</h3>
+    <form id="patientForm">
+      <input type="hidden" id="patient_id">
+      <label>Nombre <input id="first_name" required></label>
+      <label>Apellido <input id="last_name" required></label>
+      <label>Fecha de nacimiento <input id="dob" type="date"></label>
+      <button type="submit">Guardar</button>
+    </form>
+  </div>
+
+  <script>
+    const token = sessionStorage.getItem('token');
+    async function api(path, method='GET', body){
+      const opts = {method, headers: {Authorization: 'Bearer ' + token}};
+      if (body){ opts.headers['Content-Type']='application/json'; opts.body = JSON.stringify(body); }
+      const r = await fetch('/api' + path, opts);
+      return r.json();
+    }
+
+    async function search(q=''){
+      const data = await api('/patients?q=' + encodeURIComponent(q));
+      const tbody = document.querySelector('#tbl tbody');
+      tbody.innerHTML = '';
+      data.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.patient_id}</td><td>${p.first_name} ${p.last_name}</td>
+          <td>${p.dob ? Math.floor((Date.now()-new Date(p.dob))/31557600000) : ''}</td>
+          <td>
+            <button onclick="edit(${p.patient_id})">Editar</button>
+            <button onclick="del(${p.patient_id})">Eliminar</button>
+            <button onclick="newAppointment(${p.patient_id})">Citar</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('search').addEventListener('click', ()=> search(document.getElementById('q').value));
+    document.getElementById('new').addEventListener('click', ()=> {
+      document.getElementById('formArea').style.display='block';
+      document.getElementById('formTitle').innerText='Nuevo paciente';
+      document.getElementById('patientForm').reset();
+      document.getElementById('patient_id').value='';
+    });
+
+    document.getElementById('patientForm').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const id = document.getElementById('patient_id').value;
+      const payload = {
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        dob: document.getElementById('dob').value
+      };
+      if (id) await api('/patients/' + id, 'PUT', payload);
+      else await api('/patients', 'POST', payload);
+      document.getElementById('formArea').style.display='none';
+      search();
+    });
+
+    async function edit(id){
+      const p = await api('/patients/' + id);
+      document.getElementById('formArea').style.display='block';
+      document.getElementById('formTitle').innerText='Editar paciente';
+      document.getElementById('patient_id').value = p.patient_id;
+      document.getElementById('first_name').value = p.first_name;
+      document.getElementById('last_name').value = p.last_name;
+      document.getElementById('dob').value = p.dob ? p.dob.split('T')[0] : '';
+    }
+
+    async function del(id){
+      if (!confirm('Eliminar paciente?')) return;
+      await api('/patients/' + id, 'DELETE');
+      search();
+    }
+
+    // inicial
+    search();
+  </script>
+</body>
+</html>

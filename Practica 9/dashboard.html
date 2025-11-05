@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard - Clinica</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <nav>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="patients.html">Pacientes</a>
+    <a href="appointments.html">Agenda</a>
+    <a href="doctors.html">Médicos</a>
+    <a href="reports.html">Reportes</a>
+    <a href="payments.html">Pagos</a>
+    <a href="tariffs.html">Tarifas</a>
+    <a href="logs.html">Bitácoras</a>
+  </nav>
+
+  <main>
+    <h1>Panel principal</h1>
+    <section id="today-summary">
+      <!-- resumen de citas, ingresos, alertas -->
+    </section>
+  </main>
+
+  <script>
+    // carga rápida de datos usando token
+    async function apiGet(path){
+      const token = sessionStorage.getItem('token');
+      const r = await fetch('/api' + path, {headers: {Authorization: 'Bearer ' + token}});
+      return r.json();
+    }
+    async function loadSummary(){
+      const data = await apiGet('/dashboard/summary');
+      document.getElementById('today-summary').innerHTML = `
+        <p>Citas hoy: ${data.appointments_today}</p>
+        <p>Ingresos hoy: ${data.revenue_today}</p>
+      `;
+    }
+    loadSummary();
+  </script>
+</body>
+</html>
